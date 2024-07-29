@@ -30,4 +30,10 @@ public class WordTranslationController {
         wordTranslationService.createWordTranslations(data);
         return ResponseEntity.ok("Word translations created successfully");
     }
+
+    @DeleteMapping("/delete-all")
+    public ResponseEntity<String> deleteAllWordTranslations() {
+        wordTranslationService.deleteAllWordTranslations();
+        return ResponseEntity.ok("Word translations deleted successfully");
+    }
 }

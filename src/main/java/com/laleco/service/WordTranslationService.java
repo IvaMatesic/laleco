@@ -45,4 +45,8 @@ public class WordTranslationService {
         wordTranslationRepository.saveAll(wordTranslations);
     }
 
+    public void deleteAllWordTranslations() {
+        wordTranslationRepository.deleteAll();
+    }
+
 }
