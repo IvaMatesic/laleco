@@ -16,7 +16,7 @@ public class WordTranslationService {
     private WordTranslationRepository wordTranslationRepository;
 
     public List<WordTranslation> getWordTranslations() {
-        return wordTranslationRepository.findAll();
+        return wordTranslationRepository.findAllRandom();
     }
 
     public void createDefaultWordTranslations() {
