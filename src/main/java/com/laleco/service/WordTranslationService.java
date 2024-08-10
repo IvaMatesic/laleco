@@ -19,6 +19,10 @@ public class WordTranslationService {
         return wordTranslationRepository.findAllRandom();
     }
 
+    public void deleteAllWordTranslations() {
+        wordTranslationRepository.deleteAll();
+    }
+
     public void createDefaultWordTranslations() {
         List<WordTranslation> words = new LinkedList<>();
         words.add(WordTranslation.builder().word("german").translation("english").build());
@@ -28,6 +32,30 @@ public class WordTranslationService {
     }
 
     public void createWordTranslations(String data) {
+        List<WordTranslation> wordTranslations;
+
+        if (isExcelFormat(data)) {
+            wordTranslations = getAllWordTranslationsFromExcelFormat(data);
+        } else {
+            wordTranslations = getAllWordTranslationsFromSeedlangFormat(data);
+        }
+
+        wordTranslationRepository.saveAll(wordTranslations);
+    }
+
+    private boolean isExcelFormat(String data) {
+        return data.contains("\t");
+    }
+
+    private boolean isLevelIdentifier(String line) {
+        return line.matches("^[A-C][1-9]$");
+    }
+
+    private boolean isLabelToIgnore(String line) {
+        return line.equalsIgnoreCase("colloquial") || line.equalsIgnoreCase("vulgar");
+    }
+
+    private List<WordTranslation> getAllWordTranslationsFromExcelFormat(String data) {
         String[] lines = data.split("\n");
         List<WordTranslation> wordTranslations = new ArrayList<>();
         for (String line : lines) {
@@ -42,11 +70,35 @@ public class WordTranslationService {
                 wordTranslations.add(wordTranslation);
             }
         }
-        wordTranslationRepository.saveAll(wordTranslations);
+        return wordTranslations;
     }
 
-    public void deleteAllWordTranslations() {
-        wordTranslationRepository.deleteAll();
+    private List<WordTranslation> getAllWordTranslationsFromSeedlangFormat(String data) {
+        String[] lines = data.split("\n");
+        List<WordTranslation> wordTranslations = new ArrayList<>();
+        String currentWord = null;
+
+        for (String line : lines) {
+            line = line.trim();
+
+            if (line.isEmpty() || isLevelIdentifier(line) || isLabelToIgnore(line)) {
+                continue;
+            }
+
+            if (currentWord == null) {
+                currentWord = line;
+            } else {
+                String translation = line;
+                WordTranslation wordTranslation = WordTranslation.builder()
+                        .word(currentWord)
+                        .translation(translation)
+                        .build();
+                wordTranslations.add(wordTranslation);
+                currentWord = null;
+            }
+        }
+
+        return wordTranslations;
     }
 
 }
