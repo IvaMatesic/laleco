@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -36,8 +37,12 @@ public class WordTranslationService {
 
         if (isExcelFormat(data)) {
             wordTranslations = getAllWordTranslationsFromExcelFormat(data);
-        } else {
+        } else if (isSeedlangFormat(data)) {
             wordTranslations = getAllWordTranslationsFromSeedlangFormat(data);
+        } else if (isEasyGermanCallVocabularyFormat(data)) {
+            wordTranslations = getAllWordTranslationsFromEasyGermanCallVocabularyFormat(data);
+        } else {
+            throw new IllegalArgumentException("Unknown data format");
         }
 
         wordTranslationRepository.saveAll(wordTranslations);
@@ -47,8 +52,25 @@ public class WordTranslationService {
         return data.contains("\t");
     }
 
+    private boolean isEasyGermanCallVocabularyFormat(String data) {
+        String[] lines = data.split("\n");
+        for (String line : lines) {
+            if (!line.contains(" - ")) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isSeedlangFormat(String data) {
+        String[] levelIdentifiers = {"A1", "A2", "B1", "B2", "C1", "C2"};
+        return Arrays.stream(levelIdentifiers).anyMatch(data::contains);
+    }
+
+
+
     private boolean isLevelIdentifier(String line) {
-        return line.matches("^[A-C][1-9]$");
+        return line.matches("^[A-C][1-2]$");
     }
 
     private boolean isLabelToIgnore(String line) {
@@ -95,6 +117,23 @@ public class WordTranslationService {
                         .build();
                 wordTranslations.add(wordTranslation);
                 currentWord = null;
+            }
+        }
+
+        return wordTranslations;
+    }
+
+    private List<WordTranslation> getAllWordTranslationsFromEasyGermanCallVocabularyFormat(String data) {
+        List<WordTranslation> wordTranslations = new ArrayList<>();
+
+        String[] lines = data.split("\n");
+        for (String line : lines) {
+            String[] parts = line.split(" - ");
+            if (parts.length == 2) {
+                String originalWord = parts[0].trim();
+                String translation = parts[1].trim();
+                WordTranslation wordTranslation = WordTranslation.builder().translation(translation).word(originalWord).build();
+                wordTranslations.add(wordTranslation);
             }
         }
 
