@@ -1,20 +1,23 @@
 package com.laleco.service;
 
+import com.laleco.dto.LessonRequestDto;
+import com.laleco.model.Lesson;
 import com.laleco.model.WordTranslation;
+import com.laleco.repository.LessonRepository;
 import com.laleco.repository.WordTranslationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.time.LocalDate;
+import java.util.*;
 
 @Service
 public class WordTranslationService {
 
     @Autowired
     private WordTranslationRepository wordTranslationRepository;
+    @Autowired
+    private LessonRepository lessonRepository;
 
     public List<WordTranslation> getWordTranslations() {
         return wordTranslationRepository.findAllRandom();
@@ -32,8 +35,9 @@ public class WordTranslationService {
         wordTranslationRepository.saveAll(words);
     }
 
-    public void createWordTranslations(String data) {
+    public void createWordTranslations(LessonRequestDto lessonRequestDto) {
         List<WordTranslation> wordTranslations;
+        String data = lessonRequestDto.getWordTranslationData();
 
         if (isExcelFormat(data)) {
             wordTranslations = getAllWordTranslationsFromExcelFormat(data);
@@ -45,7 +49,16 @@ public class WordTranslationService {
             throw new IllegalArgumentException("Unknown data format");
         }
 
-        wordTranslationRepository.saveAll(wordTranslations);
+       saveLesson(lessonRequestDto.getLessonTitle(), lessonRequestDto.getLessonUrl(), wordTranslations);
+    }
+
+    private void saveLesson(String title, String url, List<WordTranslation> wordTranslations) {
+        lessonRepository.save(Lesson.builder()
+                        .title(title)
+                        .url(url)
+                        .dateCreated(LocalDate.now())
+                        .wordTranslations(wordTranslations)
+                .build());
     }
 
     private boolean isExcelFormat(String data) {

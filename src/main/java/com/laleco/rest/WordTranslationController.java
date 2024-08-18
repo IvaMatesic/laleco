@@ -1,5 +1,6 @@
 package com.laleco.rest;
 
+import com.laleco.dto.LessonRequestDto;
 import com.laleco.model.WordTranslation;
 import com.laleco.service.WordTranslationService;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +28,8 @@ public class WordTranslationController {
     }
 
     @PostMapping("/create/bulk")
-    public ResponseEntity<String> createWordTranslations(@RequestBody String data) {
-        wordTranslationService.createWordTranslations(data);
+    public ResponseEntity<String> createWordTranslations(@RequestBody LessonRequestDto lessonRequestDto) {
+        wordTranslationService.createWordTranslations(lessonRequestDto);
         return ResponseEntity.ok("Word translations created successfully");
     }
 
