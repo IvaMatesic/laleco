@@ -1,10 +1,12 @@
 package com.laleco.service;
 
+import com.laleco.dto.LessonDto;
 import com.laleco.dto.LessonRequestDto;
 import com.laleco.model.Lesson;
 import com.laleco.model.WordTranslation;
 import com.laleco.repository.LessonRepository;
 import com.laleco.repository.WordTranslationRepository;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,9 +17,13 @@ import java.util.*;
 public class WordTranslationService {
 
     @Autowired
-    private WordTranslationRepository wordTranslationRepository;
+    private ModelMapper modelMapper;
+
     @Autowired
     private LessonRepository lessonRepository;
+    @Autowired
+    private WordTranslationRepository wordTranslationRepository;
+
 
     public List<WordTranslation> getWordTranslations() {
         return wordTranslationRepository.findAllRandom();
@@ -35,7 +41,7 @@ public class WordTranslationService {
         wordTranslationRepository.saveAll(words);
     }
 
-    public void createWordTranslations(LessonRequestDto lessonRequestDto) {
+    public LessonDto createWordTranslations(LessonRequestDto lessonRequestDto) {
         List<WordTranslation> wordTranslations;
         String data = lessonRequestDto.getWordTranslationData();
 
@@ -49,11 +55,13 @@ public class WordTranslationService {
             throw new IllegalArgumentException("Unknown data format");
         }
 
-       saveLesson(lessonRequestDto.getLessonTitle(), lessonRequestDto.getLessonUrl(), wordTranslations);
+        Lesson savedLesson = saveLesson(lessonRequestDto.getLessonTitle(), lessonRequestDto.getLessonUrl(), wordTranslations);
+
+       return modelMapper.map(savedLesson, LessonDto.class);
     }
 
-    private void saveLesson(String title, String url, List<WordTranslation> wordTranslations) {
-        lessonRepository.save(Lesson.builder()
+    private Lesson saveLesson(String title, String url, List<WordTranslation> wordTranslations) {
+        return lessonRepository.save(Lesson.builder()
                         .title(title)
                         .url(url)
                         .dateCreated(LocalDate.now())
