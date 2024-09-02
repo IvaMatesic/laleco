@@ -8,10 +8,16 @@ import com.laleco.repository.LessonRepository;
 import com.laleco.repository.WordTranslationRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class WordTranslationService {
@@ -25,9 +31,20 @@ public class WordTranslationService {
     private WordTranslationRepository wordTranslationRepository;
 
 
-    public List<WordTranslation> getWordTranslations() {
+    public List<WordTranslation> getWordTranslations(String filterBy, Integer numberOfLessons) {
+        if ("latestLesson".equalsIgnoreCase(filterBy)) {
+            int lessonsToFetch = (numberOfLessons != null && numberOfLessons > 0) ? numberOfLessons : 1;
+            return getWordTranslationsForLatestLessons(lessonsToFetch);
+        }
         return wordTranslationRepository.findAllRandom();
     }
+
+    private List<WordTranslation> getWordTranslationsForLatestLessons(int numberOfLessons) {
+        return lessonRepository.findAll(PageRequest.of(0, numberOfLessons, Sort.by(Sort.Order.desc("dateCreated")))).stream()
+                .flatMap(lesson -> lesson.getWordTranslations().stream())
+                .collect(Collectors.toList());
+    }
+
 
     public void deleteAllWordTranslations() {
         wordTranslationRepository.deleteAll();
@@ -57,15 +74,15 @@ public class WordTranslationService {
 
         Lesson savedLesson = saveLesson(lessonRequestDto.getLessonTitle(), lessonRequestDto.getLessonUrl(), wordTranslations);
 
-       return modelMapper.map(savedLesson, LessonDto.class);
+        return modelMapper.map(savedLesson, LessonDto.class);
     }
 
     private Lesson saveLesson(String title, String url, List<WordTranslation> wordTranslations) {
         return lessonRepository.save(Lesson.builder()
-                        .title(title)
-                        .url(url)
-                        .dateCreated(LocalDate.now())
-                        .wordTranslations(wordTranslations)
+                .title(title)
+                .url(url)
+                .dateCreated(LocalDate.now())
+                .wordTranslations(wordTranslations)
                 .build());
     }
 
@@ -87,8 +104,6 @@ public class WordTranslationService {
         String[] levelIdentifiers = {"A1", "A2", "B1", "B2", "C1", "C2"};
         return Arrays.stream(levelIdentifiers).anyMatch(data::contains);
     }
-
-
 
     private boolean isLevelIdentifier(String line) {
         return line.matches("^[A-C][1-2]$");
