@@ -13,10 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,9 +37,11 @@ public class WordTranslationService {
     }
 
     private List<WordTranslation> getWordTranslationsForLatestLessons(int numberOfLessons) {
-        return lessonRepository.findAll(PageRequest.of(0, numberOfLessons, Sort.by(Sort.Order.desc("dateCreated")))).stream()
+        List<WordTranslation> result = lessonRepository.findAll(PageRequest.of(0, numberOfLessons, Sort.by(Sort.Order.desc("dateCreated")))).stream()
                 .flatMap(lesson -> lesson.getWordTranslations().stream())
                 .collect(Collectors.toList());
+        Collections.shuffle(result);
+        return result;
     }
 
 
