@@ -19,8 +19,8 @@ public class WordTranslationController {
     private final WordTranslationService wordTranslationService;
 
     @GetMapping()
-    public List<WordTranslation> findAllTranslations() {
-        return wordTranslationService.getWordTranslations();
+    public List<WordTranslation> findAllTranslations(@RequestParam(required = false) String filterBy, @RequestParam(required = false)Integer numberOfLessons) {
+        return wordTranslationService.getWordTranslations(filterBy, numberOfLessons);
     }
 
     @PostMapping("/create/default-translations")
