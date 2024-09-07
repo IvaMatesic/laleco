@@ -27,7 +27,6 @@ public class WordTranslationService {
     @Autowired
     private WordTranslationRepository wordTranslationRepository;
 
-
     public List<WordTranslation> getWordTranslations(String filterBy, Integer numberOfLessons) {
         if ("latestLesson".equalsIgnoreCase(filterBy)) {
             int lessonsToFetch = (numberOfLessons != null && numberOfLessons > 0) ? numberOfLessons : 1;
