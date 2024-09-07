@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  mysql:
+    container_name: 'guide-mysql'
+    image: 'mysql:latest'
+    environment:
+      MYSQL_DATABASE: laleco
+      MYSQL_USER: myuser
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: verysecret
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - app-network
+
+  app:
+    build: ..
+    container_name: 'my-app'
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/laleco
+      SPRING_DATASOURCE_USERNAME: myuser
+      SPRING_DATASOURCE_PASSWORD: secret
+    ports:
+      - '8080:8080'
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
+volumes:
+  mysql-data:
+
+networks:
+  app-network:
