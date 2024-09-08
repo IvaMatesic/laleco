@@ -28,5 +28,6 @@ public class Lesson {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "lesson_id")
+    @Builder.Default
     private List<WordTranslation> wordTranslations = new ArrayList<>();
 }
