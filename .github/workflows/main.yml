@@ -19,6 +19,10 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Navigate to Docker folder and run docker-compose
+        working-directory: ./docker
+        run: docker-compose up --build -d
+
       - name: Build with Gradle
         run: ./gradlew build
 
