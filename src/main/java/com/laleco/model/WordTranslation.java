@@ -26,5 +26,7 @@ public class WordTranslation {
 
     private String translation;
 
+    private boolean hard;
+
 }
 

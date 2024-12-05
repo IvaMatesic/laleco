@@ -2,6 +2,7 @@ package com.laleco.rest;
 
 import com.laleco.dto.LessonDto;
 import com.laleco.dto.LessonRequestDto;
+import com.laleco.dto.WordTranslationHardUpdateDto;
 import com.laleco.model.WordTranslation;
 import com.laleco.service.WordTranslationService;
 import lombok.RequiredArgsConstructor;
@@ -37,5 +38,10 @@ public class WordTranslationController {
     public ResponseEntity<String> deleteAllWordTranslations() {
         wordTranslationService.deleteAllWordTranslations();
         return ResponseEntity.ok("Word translations deleted successfully");
+    }
+
+    @PutMapping("/set-hard")
+    public ResponseEntity<List<WordTranslationHardUpdateDto>> setWordsAsHard(@RequestBody List<WordTranslationHardUpdateDto> wordUpdates) {
+        return ResponseEntity.ok(this.wordTranslationService.updateHardWords(wordUpdates));
     }
 }
