@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +18,6 @@ public class LessonDto {
     private Long id;
     private String title;
     private String url;
-    private LocalDate dateCreated;
+    private LocalDateTime dateCreated;
     private List<WordTranslation> wordTranslations = new ArrayList<>();
 }

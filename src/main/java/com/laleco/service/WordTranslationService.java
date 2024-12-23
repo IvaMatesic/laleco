@@ -2,6 +2,7 @@ package com.laleco.service;
 
 import com.laleco.dto.LessonDto;
 import com.laleco.dto.LessonRequestDto;
+import com.laleco.dto.WordTranslationHardUpdateDto;
 import com.laleco.model.Lesson;
 import com.laleco.model.WordTranslation;
 import com.laleco.repository.LessonRepository;
@@ -12,7 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +33,9 @@ public class WordTranslationService {
         if ("latestLesson".equalsIgnoreCase(filterBy)) {
             int lessonsToFetch = (numberOfLessons != null && numberOfLessons > 0) ? numberOfLessons : 1;
             return getWordTranslationsForLatestLessons(lessonsToFetch);
+        }
+        if ("hardWords".equalsIgnoreCase(filterBy)) {
+            return wordTranslationRepository.findAllHardWordsRandom();
         }
         return wordTranslationRepository.findAllRandom();
     }
@@ -80,7 +84,7 @@ public class WordTranslationService {
         return lessonRepository.save(Lesson.builder()
                 .title(title)
                 .url(url)
-                .dateCreated(LocalDate.now())
+                .dateCreated(LocalDateTime.now())
                 .wordTranslations(wordTranslations)
                 .build());
     }
@@ -175,4 +179,15 @@ public class WordTranslationService {
         return wordTranslations;
     }
 
+    public List<WordTranslationHardUpdateDto> updateHardWords(List<WordTranslationHardUpdateDto> wordUpdates) {
+        for (WordTranslationHardUpdateDto updateDTO : wordUpdates) {
+            Optional<WordTranslation> wordTranslationOptional = wordTranslationRepository.findById(updateDTO.getId());
+            if (wordTranslationOptional.isPresent()) {
+                WordTranslation wordTranslation = wordTranslationOptional.get();
+                wordTranslation.setHard(updateDTO.isHard());
+                wordTranslationRepository.save(wordTranslation);
+            }
+        }
+        return wordUpdates;
+    }
 }
