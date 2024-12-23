@@ -2,11 +2,13 @@ package com.laleco.service;
 
 import com.laleco.dto.LessonDto;
 import com.laleco.dto.LessonRequestDto;
+import com.laleco.dto.UpdateReviewDto;
 import com.laleco.dto.WordTranslationHardUpdateDto;
 import com.laleco.model.Lesson;
 import com.laleco.model.WordTranslation;
 import com.laleco.repository.LessonRepository;
 import com.laleco.repository.WordTranslationRepository;
+import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -28,7 +30,6 @@ public class WordTranslationService {
     @Autowired
     private WordTranslationRepository wordTranslationRepository;
 
-
     public List<WordTranslation> getWordTranslations(String filterBy, Integer numberOfLessons) {
         if ("latestLesson".equalsIgnoreCase(filterBy)) {
             int lessonsToFetch = (numberOfLessons != null && numberOfLessons > 0) ? numberOfLessons : 1;
@@ -37,17 +38,38 @@ public class WordTranslationService {
         if ("hardWords".equalsIgnoreCase(filterBy)) {
             return wordTranslationRepository.findAllHardWordsRandom();
         }
-        return wordTranslationRepository.findAllRandom();
+        return getWordsForReviewShuffled();
     }
 
-    private List<WordTranslation> getWordTranslationsForLatestLessons(int numberOfLessons) {
-        List<WordTranslation> result = lessonRepository.findAll(PageRequest.of(0, numberOfLessons, Sort.by(Sort.Order.desc("dateCreated")))).stream()
+    public List<WordTranslation> getWordsForReviewShuffled() {
+        LocalDateTime now = LocalDateTime.now();
+        List<WordTranslation> wordsForReview = wordTranslationRepository.findByNextReviewBefore(now);
+        Collections.shuffle(wordsForReview);
+        return wordsForReview;
+    }
+
+    private List<WordTranslation> getWordTranslationsAfterDate() {
+        LocalDateTime filterDate = LocalDateTime.of(2024, 12, 1, 0, 0);
+
+        List<WordTranslation> result = lessonRepository.findAll().stream() // Alle Lektionen laden
+                .filter(lesson -> lesson.getDateCreated().isAfter(filterDate)) // Filter für Datum
                 .flatMap(lesson -> lesson.getWordTranslations().stream())
                 .collect(Collectors.toList());
         Collections.shuffle(result);
         return result;
     }
 
+
+    private List<WordTranslation> getWordTranslationsForLatestLessons(int numberOfLessons) {
+        List<WordTranslation> result = lessonRepository.findAll(
+                        PageRequest.of(0, numberOfLessons, Sort.by(Sort.Order.desc("dateCreated")))
+                ).stream()
+                .flatMap(lesson -> lesson.getWordTranslations().stream())
+                .filter(wordTranslation -> wordTranslation.getLastReviewed() == null)
+                .collect(Collectors.toList());
+        Collections.shuffle(result);
+        return result;
+    }
 
     public void deleteAllWordTranslations() {
         wordTranslationRepository.deleteAll();
@@ -61,6 +83,50 @@ public class WordTranslationService {
         wordTranslationRepository.saveAll(words);
     }
 
+    @Transactional
+    public List<WordTranslation> updateWordsSpacedRepetition(List<UpdateReviewDto> updateReviewDtos) {
+        List<WordTranslation> updatedWords = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (UpdateReviewDto dto : updateReviewDtos) {
+            WordTranslation word = wordTranslationRepository.findById(dto.getId())
+                    .orElseThrow(() -> new RuntimeException("Word not found with id: " + dto.getId()));
+
+            if (word.getLastReviewed() != null && word.getLastReviewed().toLocalDate().isEqual(now.toLocalDate())) {
+                continue;
+            }
+
+            int currentInterval = word.getInterval();
+            int newInterval;
+
+            switch (dto.getDifficulty()) {
+                case 4:
+                    newInterval = Math.max(0, currentInterval / 4);
+                    break;
+                case 3:
+                    newInterval = Math.max(1, currentInterval / 2);
+                    break;
+                case 2:
+                    newInterval = currentInterval;
+                    break;
+                case 1:
+                    newInterval = currentInterval * 2;
+                    break;
+                default:
+                    newInterval = currentInterval;
+            }
+
+            word.setInterval(newInterval);
+            word.setLastReviewed(now);
+            word.setNextReview(now.plusDays(newInterval));
+
+            updatedWords.add(word);
+        }
+
+        return wordTranslationRepository.saveAll(updatedWords);
+    }
+
+
     public LessonDto createWordTranslations(LessonRequestDto lessonRequestDto) {
         List<WordTranslation> wordTranslations;
         String data = lessonRequestDto.getWordTranslationData();
@@ -71,6 +137,10 @@ public class WordTranslationService {
             wordTranslations = getAllWordTranslationsFromSeedlangFormat(data);
         } else if (isEasyGermanCallVocabularyFormat(data)) {
             wordTranslations = getAllWordTranslationsFromEasyGermanCallVocabularyFormat(data);
+
+        } else if (isSeedlangReviewCardFormat(data)) {
+            wordTranslations = getAllWordTranslationsFromSeedlangReviewCardFormat(data);
+
         } else {
             throw new IllegalArgumentException("Unknown data format");
         }
@@ -106,6 +176,10 @@ public class WordTranslationService {
     private boolean isSeedlangFormat(String data) {
         String[] levelIdentifiers = {"A1", "A2", "B1", "B2", "C1", "C2"};
         return Arrays.stream(levelIdentifiers).anyMatch(data::contains);
+    }
+
+    private boolean isSeedlangReviewCardFormat(String data) {
+        return data.contains("FRONT OF CARD") && data.contains("BACK OF CARD");
     }
 
     private boolean isLevelIdentifier(String line) {
@@ -178,6 +252,54 @@ public class WordTranslationService {
 
         return wordTranslations;
     }
+
+    public List<WordTranslation> getAllWordTranslationsFromSeedlangReviewCardFormat(String input) {
+        List<WordTranslation> wordTranslations = new ArrayList<>();
+
+        // Split input into lines
+        String[] lines = input.split("\\n");
+
+        WordTranslation currentCard = null;
+        boolean isFront = false, isBack = false;
+
+        for (String line : lines) {
+            line = line.trim();
+
+            // Start of a new card
+            if (line.equalsIgnoreCase("FRONT OF CARD")) {
+                // If there's an ongoing card, add it to the list
+                if (currentCard != null) {
+                    wordTranslations.add(currentCard);
+                }
+                currentCard = new WordTranslation();
+                isFront = true;
+                isBack = false;
+            } else if (line.equalsIgnoreCase("BACK OF CARD")) {
+                isFront = false;
+                isBack = true;
+            } else if (line.equalsIgnoreCase("CARD TYPE")) {
+                // Finish parsing the current card
+                if (currentCard != null) {
+                    wordTranslations.add(currentCard);
+                    currentCard = null;
+                }
+                isFront = false;
+                isBack = false;
+            } else if (isFront && currentCard != null) {
+                currentCard.setWord(line);
+            } else if (isBack && currentCard != null) {
+                currentCard.setTranslation(line);
+            }
+        }
+
+        // Add the last card if it hasn't been added yet
+        if (currentCard != null) {
+            wordTranslations.add(currentCard);
+        }
+
+        return wordTranslations;
+    }
+
 
     public List<WordTranslationHardUpdateDto> updateHardWords(List<WordTranslationHardUpdateDto> wordUpdates) {
         for (WordTranslationHardUpdateDto updateDTO : wordUpdates) {

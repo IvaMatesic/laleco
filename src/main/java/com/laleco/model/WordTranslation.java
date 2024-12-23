@@ -1,14 +1,13 @@
 package com.laleco.model;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 
 @Builder
@@ -27,6 +26,13 @@ public class WordTranslation {
     private String translation;
 
     private boolean hard;
+
+    @Column(name = "review_interval")
+    private int interval = 2;
+
+    private LocalDateTime lastReviewed;
+
+    private LocalDateTime nextReview;
 
 }
 
