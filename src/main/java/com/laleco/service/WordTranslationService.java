@@ -84,7 +84,7 @@ public class WordTranslationService {
     }
 
     @Transactional
-    public List<WordTranslation> updateWordsSpacedRepetition(List<UpdateReviewDto> updateReviewDtos) {
+    public void updateWordsSpacedRepetition(List<UpdateReviewDto> updateReviewDtos) {
         List<WordTranslation> updatedWords = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
 
@@ -92,29 +92,14 @@ public class WordTranslationService {
             WordTranslation word = wordTranslationRepository.findById(dto.getId())
                     .orElseThrow(() -> new RuntimeException("Word not found with id: " + dto.getId()));
 
-            if (word.getLastReviewed() != null && word.getLastReviewed().toLocalDate().isEqual(now.toLocalDate())) {
-                continue;
-            }
-
             int currentInterval = word.getInterval();
-            int newInterval;
-
-            switch (dto.getDifficulty()) {
-                case 4:
-                    newInterval = Math.max(0, currentInterval / 4);
-                    break;
-                case 3:
-                    newInterval = Math.max(1, currentInterval / 2);
-                    break;
-                case 2:
-                    newInterval = currentInterval;
-                    break;
-                case 1:
-                    newInterval = currentInterval * 2;
-                    break;
-                default:
-                    newInterval = currentInterval;
-            }
+            int newInterval = switch (dto.getDifficulty()) {
+                case 4 -> Math.max(1, currentInterval / 4);
+                case 3 -> Math.max(1, currentInterval / 2);
+                case 2 -> currentInterval;
+                case 1 -> currentInterval * 2;
+                default -> currentInterval;
+            };
 
             word.setInterval(newInterval);
             word.setLastReviewed(now);
@@ -123,7 +108,7 @@ public class WordTranslationService {
             updatedWords.add(word);
         }
 
-        return wordTranslationRepository.saveAll(updatedWords);
+        wordTranslationRepository.saveAll(updatedWords);
     }
 
 

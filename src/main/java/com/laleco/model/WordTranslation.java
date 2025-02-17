@@ -28,11 +28,16 @@ public class WordTranslation {
     private boolean hard;
 
     @Column(name = "review_interval")
-    private int interval = 2;
+    @Builder.Default
+    private int interval = 4;
 
     private LocalDateTime lastReviewed;
 
     private LocalDateTime nextReview;
 
+    @PrePersist
+    public void prePersist() {
+        this.nextReview = LocalDateTime.now();
+    }
 }
 
