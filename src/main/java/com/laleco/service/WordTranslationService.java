@@ -51,8 +51,8 @@ public class WordTranslationService {
     private List<WordTranslation> getWordTranslationsAfterDate() {
         LocalDateTime filterDate = LocalDateTime.of(2024, 12, 1, 0, 0);
 
-        List<WordTranslation> result = lessonRepository.findAll().stream() // Alle Lektionen laden
-                .filter(lesson -> lesson.getDateCreated().isAfter(filterDate)) // Filter für Datum
+        List<WordTranslation> result = lessonRepository.findAll().stream()
+                .filter(lesson -> lesson.getDateCreated().isAfter(filterDate))
                 .flatMap(lesson -> lesson.getWordTranslations().stream())
                 .collect(Collectors.toList());
         Collections.shuffle(result);
@@ -241,7 +241,6 @@ public class WordTranslationService {
     public List<WordTranslation> getAllWordTranslationsFromSeedlangReviewCardFormat(String input) {
         List<WordTranslation> wordTranslations = new ArrayList<>();
 
-        // Split input into lines
         String[] lines = input.split("\\n");
 
         WordTranslation currentCard = null;
@@ -250,9 +249,7 @@ public class WordTranslationService {
         for (String line : lines) {
             line = line.trim();
 
-            // Start of a new card
             if (line.equalsIgnoreCase("FRONT OF CARD")) {
-                // If there's an ongoing card, add it to the list
                 if (currentCard != null) {
                     wordTranslations.add(currentCard);
                 }
@@ -263,7 +260,6 @@ public class WordTranslationService {
                 isFront = false;
                 isBack = true;
             } else if (line.equalsIgnoreCase("CARD TYPE")) {
-                // Finish parsing the current card
                 if (currentCard != null) {
                     wordTranslations.add(currentCard);
                     currentCard = null;
@@ -277,7 +273,6 @@ public class WordTranslationService {
             }
         }
 
-        // Add the last card if it hasn't been added yet
         if (currentCard != null) {
             wordTranslations.add(currentCard);
         }
