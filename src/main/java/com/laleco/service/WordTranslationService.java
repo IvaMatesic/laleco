@@ -48,18 +48,6 @@ public class WordTranslationService {
         return wordsForReview;
     }
 
-    private List<WordTranslation> getWordTranslationsAfterDate() {
-        LocalDateTime filterDate = LocalDateTime.of(2024, 12, 1, 0, 0);
-
-        List<WordTranslation> result = lessonRepository.findAll().stream()
-                .filter(lesson -> lesson.getDateCreated().isAfter(filterDate))
-                .flatMap(lesson -> lesson.getWordTranslations().stream())
-                .collect(Collectors.toList());
-        Collections.shuffle(result);
-        return result;
-    }
-
-
     private List<WordTranslation> getWordTranslationsForLatestLessons(int numberOfLessons) {
         List<WordTranslation> result = lessonRepository.findAll(
                         PageRequest.of(0, numberOfLessons, Sort.by(Sort.Order.desc("dateCreated")))
