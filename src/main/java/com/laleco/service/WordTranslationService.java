@@ -78,7 +78,12 @@ public class WordTranslationService {
 
         for (UpdateReviewDto dto : updateReviewDtos) {
             WordTranslation word = wordTranslationRepository.findById(dto.getId())
-                    .orElseThrow(() -> new RuntimeException("Word not found with id: " + dto.getId()));
+                    .orElse(null);
+
+            if (word == null) {
+                System.err.println("Word not found with id: " + dto.getId());
+                continue;
+            }
 
             int currentInterval = word.getInterval();
             int newInterval = switch (dto.getDifficulty()) {

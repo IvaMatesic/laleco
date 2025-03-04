@@ -48,7 +48,6 @@ public class WordTranslationController {
 
     @PostMapping("/update-review")
     public ResponseEntity<String> updateWordSpacedRepetition(@RequestBody List<UpdateReviewDto> updateReviews) {
-
         wordTranslationService.updateWordsSpacedRepetition(updateReviews);
         return ResponseEntity.ok("Successfully saved reviews");
     }
