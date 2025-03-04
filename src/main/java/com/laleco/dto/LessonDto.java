@@ -19,5 +19,6 @@ public class LessonDto {
     private String title;
     private String url;
     private LocalDateTime dateCreated;
+    @Builder.Default
     private List<WordTranslation> wordTranslations = new ArrayList<>();
 }

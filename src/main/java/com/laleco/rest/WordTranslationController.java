@@ -2,6 +2,7 @@ package com.laleco.rest;
 
 import com.laleco.dto.LessonDto;
 import com.laleco.dto.LessonRequestDto;
+import com.laleco.dto.UpdateReviewDto;
 import com.laleco.dto.WordTranslationHardUpdateDto;
 import com.laleco.model.WordTranslation;
 import com.laleco.service.WordTranslationService;
@@ -43,5 +44,11 @@ public class WordTranslationController {
     @PutMapping("/set-hard")
     public ResponseEntity<List<WordTranslationHardUpdateDto>> setWordsAsHard(@RequestBody List<WordTranslationHardUpdateDto> wordUpdates) {
         return ResponseEntity.ok(this.wordTranslationService.updateHardWords(wordUpdates));
+    }
+
+    @PostMapping("/update-review")
+    public ResponseEntity<String> updateWordSpacedRepetition(@RequestBody List<UpdateReviewDto> updateReviews) {
+        wordTranslationService.updateWordsSpacedRepetition(updateReviews);
+        return ResponseEntity.ok("Successfully saved reviews");
     }
 }
