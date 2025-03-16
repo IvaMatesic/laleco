@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
@@ -24,6 +25,8 @@ public class WordTranslation {
     private String word;
 
     private String translation;
+    @Setter
+    private String exampleSentence;
 
     private boolean hard;
 

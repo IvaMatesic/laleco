@@ -44,6 +44,7 @@ public class WordTranslationService {
     public List<WordTranslation> getWordsForReviewShuffled() {
         LocalDateTime now = LocalDateTime.now();
         List<WordTranslation> wordsForReview = wordTranslationRepository.findByNextReviewBefore(now);
+        List<WordTranslation> wordsForReview2 = wordTranslationRepository.findWhereExampleSentenceDoesNotExist();
         Collections.shuffle(wordsForReview);
         return wordsForReview;
     }
@@ -85,6 +86,10 @@ public class WordTranslationService {
                 continue;
             }
 
+            if (word.getLastReviewed() != null && word.getLastReviewed().toLocalDate().isEqual(now.toLocalDate())) {
+                continue;
+            }
+
             int currentInterval = word.getInterval();
             int newInterval = switch (dto.getDifficulty()) {
                 case 4 -> Math.max(1, currentInterval / 4);
@@ -113,12 +118,11 @@ public class WordTranslationService {
             wordTranslations = getAllWordTranslationsFromExcelFormat(data);
         } else if (isSeedlangFormat(data)) {
             wordTranslations = getAllWordTranslationsFromSeedlangFormat(data);
-        } else if (isEasyGermanCallVocabularyFormat(data)) {
-            wordTranslations = getAllWordTranslationsFromEasyGermanCallVocabularyFormat(data);
+        } else if (isDefaultLalecoFormat(data)) {
+            wordTranslations = getAllWordTranslationsFromDefaultLalecoFormat(data);
 
         } else if (isSeedlangReviewCardFormat(data)) {
             wordTranslations = getAllWordTranslationsFromSeedlangReviewCardFormat(data);
-
         } else {
             throw new IllegalArgumentException("Unknown data format");
         }
@@ -141,10 +145,37 @@ public class WordTranslationService {
         return data.contains("\t");
     }
 
-    private boolean isEasyGermanCallVocabularyFormat(String data) {
+    private boolean isDefaultLalecoFormat(String data) {
         String[] lines = data.split("\n");
         for (String line : lines) {
-            if (!line.contains(" - ")) {
+            line = line.trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+
+            int firstDash = line.indexOf(" - ");
+            if (firstDash == -1) {
+                return false;
+            }
+
+            int secondDash = line.indexOf(" - ", firstDash + 3);
+
+            String word = line.substring(0, firstDash).trim();
+            String translation;
+            String example = "";
+
+            if (secondDash == -1) {
+                translation = line.substring(firstDash + 3).trim();
+            } else {
+                translation = line.substring(firstDash + 3, secondDash).trim();
+                example = line.substring(secondDash + 3).trim();
+            }
+
+            if (word.isEmpty() || translation.isEmpty()) {
+                return false;
+            }
+
+            if (secondDash != -1 && example.isEmpty()) {
                 return false;
             }
         }
@@ -214,21 +245,45 @@ public class WordTranslationService {
         return wordTranslations;
     }
 
-    private List<WordTranslation> getAllWordTranslationsFromEasyGermanCallVocabularyFormat(String data) {
+    private List<WordTranslation> getAllWordTranslationsFromDefaultLalecoFormat(String data) {
         List<WordTranslation> wordTranslations = new ArrayList<>();
 
         String[] lines = data.split("\n");
         for (String line : lines) {
             String[] parts = line.split(" - ");
-            if (parts.length == 2) {
+            if (parts.length == 2 || parts.length == 3) {
                 String originalWord = parts[0].trim();
                 String translation = parts[1].trim();
-                WordTranslation wordTranslation = WordTranslation.builder().translation(translation).word(originalWord).build();
-                wordTranslations.add(wordTranslation);
+                String exampleSentence = parts.length>2 ? parts[2].trim() : "";
+
+                WordTranslation createdTranslation = addOrUpdateExampleSentence(originalWord, translation, exampleSentence);
+                if(createdTranslation!=null)
+                    wordTranslations.add(createdTranslation);
             }
         }
 
         return wordTranslations;
+    }
+
+    public WordTranslation addOrUpdateExampleSentence(String word, String translation, String exampleSentence) {
+        List<WordTranslation> existingWords = wordTranslationRepository.findAllByWord(word);
+
+        if (!existingWords.isEmpty()) {
+            for (WordTranslation wordTranslation : existingWords) {
+                wordTranslation.setExampleSentence(exampleSentence);
+                wordTranslationRepository.save(wordTranslation);
+            }
+            return null;
+        } else {
+            WordTranslation newWordTranslation = WordTranslation.builder()
+                    .word(word)
+                    .translation(translation)
+                    .exampleSentence(exampleSentence)
+                    .build();
+
+            wordTranslationRepository.save(newWordTranslation);
+            return newWordTranslation;
+        }
     }
 
     public List<WordTranslation> getAllWordTranslationsFromSeedlangReviewCardFormat(String input) {
